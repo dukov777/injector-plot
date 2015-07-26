@@ -13,17 +13,17 @@ USB_LINE_HEADER_SIZE = 8
 
 parser = argparse.ArgumentParser(description='Show Injetor Value.')
 
-parser.add_argument('--injector', dest='injector', default='all',
-                   help='Injector number (default: all)')
+parser.add_argument('--injector', dest='injector', default='all', 
+                    choices=['0', '1', '2', '3', 'all'],
+                    help='Injector number [0..3, all] (default: all)')
 
 parser.add_argument('--file', dest='filename', default='out.msr',
-                   help='file name (default: out.msr)')
+                    help='file name (default: out.msr)')
 
 parser.add_argument('--scale', dest='scale', default=1000,
-                   help='how many samles to skip while ploting (default: 1000)')
+                    help='how many samles to skip while ploting (default: 1000)')
 
 args = parser.parse_args()
-
 
 def find_packet_start(data):
     for i in range(0, USB_LINE_SIZE*2):
