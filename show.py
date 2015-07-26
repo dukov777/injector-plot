@@ -3,27 +3,14 @@ import time
 import sys
 import struct 
 import argparse
-
-import plotly.plotly as py
-from plotly.graph_objs import *
+from pylab import *
+from numpy  import *
 
 INJECTORS = 4
 USB_LINE_SIZE = 64
 USB_LINE_HEADER_SIZE = 8
 
-parser = argparse.ArgumentParser(description='Show Injetor Value.')
 
-parser.add_argument('--injector', dest='injector', default='all', 
-                    choices=['0', '1', '2', '3', 'all'],
-                    help='Injector number [0..3, all] (default: all)')
-
-parser.add_argument('--file', dest='filename', default='out.msr',
-                    help='file name (default: out.msr)')
-
-parser.add_argument('--scale', dest='scale', default=1000,
-                    help='how many samles to skip while ploting (default: 1000)')
-
-args = parser.parse_args()
 
 def find_packet_start(data):
     for i in range(0, USB_LINE_SIZE*2):
@@ -32,6 +19,7 @@ def find_packet_start(data):
         if timestamp == timestamp2:
             return data[i:]
     raise Exception("Packet is demaged")
+
 
 def extract_injectors(data): 
     injectors = []
@@ -44,32 +32,33 @@ def extract_injectors(data):
         injectors.append(injector)
     return injectors
     
+
 def plot_injectors(injectors):
     traces = []
     for injector in injectors:
-        injector = injector[0:len(injector):int(args.scale)]
-        traces.append(
-            Scatter(
-                    x=range(0, len(injector)),
-                    y=injector
-                ))
+    	plot(injector[0:len(injector):args.scale])
                 
-    #print injectors
+    title(r'Injectors', fontsize=20)
+    xlabel(r"time")
 
-    data = Data(traces)
-
-    layout = Layout(
-        yaxis=YAxis(
-            range=[0, 255],
-            autorange=False,
-            rangemode = ['tozero' , 'nonnegative'],
-        )
-    )
-    fig = Figure(data=data, layout=layout)
-    unique_url = py.plot(fig, filename = 'basic-injector')
+    show()    
 
     
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Show Injetor Value.')
+
+    parser.add_argument('--injector', dest='injector', default='all', 
+	                    choices=['0', '1', '2', '3', 'all'],
+	                    help='Injector number [0..3, all] (default: all)')
+
+    parser.add_argument('--file', dest='filename', default='out.msr',
+	                    help='file name (default: out.msr)')
+
+    parser.add_argument('--scale', dest='scale', default=1000, type=int,
+	                    help='how many samles to skip while ploting (default: 1000)')
+
+    args = parser.parse_args()
+
     f = open(args.filename)
     data = f.read()
     f.close()
