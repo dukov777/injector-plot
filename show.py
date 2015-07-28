@@ -35,12 +35,15 @@ def extract_injectors(data):
 
 def plot_injectors(injectors):
     traces = []
-    for injector in injectors:
+    labels = []
+    for id, injector in injectors:
     	plot(injector[0:len(injector):args.scale])
-                
+    	labels.append(id)
+                    
     title(r'Injectors', fontsize=20)
     xlabel(r"time")
-
+    legend(labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+           ncol=2, mode="expand", borderaxespad=0.)
     show()    
 
     
@@ -67,7 +70,8 @@ if __name__ == "__main__":
     injectors = extract_injectors(data)
 
     if args.injector != 'all':
-        injector = injectors[int(args.injector)]
+        injector = ('injector {}'.format(args.injector), 
+                    injectors[int(args.injector)])
         injectors = []
         injectors.append(injector)
 
