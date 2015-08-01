@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import usb1
 import time
 import sys

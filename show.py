@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import usb1
 import time
 import sys
@@ -5,6 +7,9 @@ import struct
 import argparse
 from pylab import *
 from numpy  import *
+
+import plotly.plotly as py
+from plotly.graph_objs import *
 
 INJECTORS = 4
 USB_LINE_SIZE = 64
@@ -33,7 +38,7 @@ def extract_injectors(data):
     return injectors
     
 
-def plot_injectors(injectors):
+def plot_injectors_local(injectors):
     traces = []
     labels = []
     for id, injector in injectors:
@@ -46,6 +51,30 @@ def plot_injectors(injectors):
            ncol=2, mode="expand", borderaxespad=0.)
     show()    
 
+def plot_injectors_remote(channels):
+    traces = []
+    for channel in channels:
+        data = channel.read()
+        print "Input file size is: ", len(data), " bytes"
+        print "Plotting ", len(data), " bytes"
+        data = data[0:len(data):args.scale]
+        traces.append(
+            Scatter(
+                    x=range(0, len(data)),
+                    y=[struct.unpack('<B', x)[0] for x in data]
+                ))
+    
+    data = Data(traces)
+
+    layout = Layout(
+        yaxis=YAxis(
+            range=[0, 255],
+            autorange=False,
+            rangemode = ['tozero' , 'nonnegative'],
+        )
+    )
+    fig = Figure(data=data, layout=layout)
+    unique_url = py.plot(fig, filename = 'basic-injector')
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Show Injetor Value.')
@@ -59,6 +88,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--scale', dest='scale', default=1, type=int,
 	                    help='how many samles to skip while ploting (default: 1000)')
+
+    parser.add_argument('--plot', dest='plot', default='local', type=str,
+                        choices=['local', 'remote'],
+	                    help='specify plot canvas (default: local)')
 
     args = parser.parse_args()
 
@@ -79,6 +112,16 @@ if __name__ == "__main__":
         for i, injector in enumerate(injectors):
             temp.append(('injector {}'.format(i), injector))
         injectors = temp      
-
-    plot_injectors(injectors)
+    
+    if args.plot == 'local':
+        plot_injectors_local(injectors)
+    else:
+        channels = []
+        
+        if args.injector == "all":
+            for channel in range(INJECTORS):
+                channels.append(open(args.filename + '.' + str(channel), 'r'))
+        else:
+            channels.append(open(args.filename + '.' + args.injector, 'r'))
+        plot_injectors_remote(channels)
 
