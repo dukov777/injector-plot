@@ -17,7 +17,7 @@ if handle is None:
 handle.claimInterface(0)
 print usb1.getVersion()
 
-BYTES = 10000000
+BYTES = 1000000
 BUFFER_SIZE = (BYTES / 64) * 64
 
 f = open("measurements.msr", 'w')
