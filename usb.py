@@ -7,6 +7,20 @@ import struct
 import argparse
 from config import *
 
+inc = 0
+prop = ['/', '+', '\\']
+def propeller(end = ''):
+    if end == 'end':
+        sys.stdout.write("\b")
+        sys.stdout.flush()
+    else:
+        global inc
+        inc += 1
+        if inc == len(prop):
+            inc = 0
+        sys.stdout.write("\b")
+        sys.stdout.write(prop[inc])
+        sys.stdout.flush()
 
 parser = argparse.ArgumentParser(description='Records Injetors.')
 
@@ -46,7 +60,10 @@ timeout = int(0.00002*BYTES)*1000
 f = open(args.filename, 'w')
 for _ in range(sequences):
     data = handle.bulkRead(1, BUFFER_SIZE, timeout)
-    f.write(data)   
+    f.write(data)
+    propeller()
 
 f.close()
+propeller('end')
+print "end"
 

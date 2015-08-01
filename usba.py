@@ -42,15 +42,13 @@ def received_usb_data(transfer):
         to resubmit in some cases (timeout, ...)."
         return
     
-    print "transfer.getActualLength()  ", transfer.getActualLength()
-    data = transfer.getBuffer()[:transfer.getActualLength()]
+    ret = pyaio.aio_write(out_file, transfer.getBuffer(), 0, file_write_end)
     
     global reads_per_file
 
     reads_per_file -= 1
     if reads_per_file > 0:
         transfer.submit()
-    ret = pyaio.aio_write(out_file, data, 0, file_write_end)
     assert ret == 0
 
 if __name__ == "__main__":

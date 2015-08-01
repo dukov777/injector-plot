@@ -75,7 +75,7 @@ if __name__ == "__main__":
 	                    help='file name (default: out.msr)')
 
     parser.add_argument('--scale', dest='scale', default=1, type=int,
-	                    help='how many samles to skip while ploting (default: 1000)')
+	                    help='how many samles to skip while ploting (default: 1)')
 
     parser.add_argument('--plot', dest='plot', default='local', type=str,
                         choices=['local', 'remote'],
