@@ -2,8 +2,7 @@
 
 import struct 
 import argparse
-
-INJECTORS = 4
+from config import *
 
 
 class ICanvas:

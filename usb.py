@@ -5,6 +5,8 @@ import time
 import sys
 import struct 
 import argparse
+from config import *
+
 
 parser = argparse.ArgumentParser(description='Records Injetors.')
 
@@ -21,8 +23,6 @@ parser.add_argument('--file', '-f', dest='filename', default='out.msr',
 
 args = parser.parse_args()
 
-VENDOR_ID = 0x04d8
-PRODUCT_ID = 0x0052
 
 context = usb1.USBContext()
 handle = context.openByVendorIDAndProductID(
