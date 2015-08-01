@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('--file', dest='filename', default='out.msr',
 	                    help='file name (default: out.msr)')
 
-    parser.add_argument('--scale', dest='scale', default=1000, type=int,
+    parser.add_argument('--scale', dest='scale', default=1, type=int,
 	                    help='how many samles to skip while ploting (default: 1000)')
 
     args = parser.parse_args()
@@ -74,6 +74,11 @@ if __name__ == "__main__":
                     injectors[int(args.injector)])
         injectors = []
         injectors.append(injector)
+    else:
+        temp = []
+        for i, injector in enumerate(injectors):
+            temp.append(('injector {}'.format(i), injector))
+        injectors = temp      
 
     plot_injectors(injectors)
 

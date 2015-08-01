@@ -6,9 +6,9 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Records Injetors.')
 
-parser.add_argument('--samples', '-s', dest='samples', default=1, type=int,
+parser.add_argument('--samples', '-s', dest='samples', default=10, type=int,
           help='specifies how many bytes to be read per usb read operation '\
-          '(default: 1 [MegaSample])')
+          '(default: 1 [kSample])')
 
 parser.add_argument('--iter', '-i', dest='iter', default=1, type=int,
                    help='specifies how many usb reads to be done per file '\
@@ -35,7 +35,7 @@ print usb1.getVersion()
 
 sequences = args.iter
 
-BYTES = args.samples*1000*1000
+BYTES = args.samples*1000
 BUFFER_SIZE = (BYTES / 64) * 64
 timeout = int(0.00002*BYTES)*1000
 
