@@ -8,11 +8,11 @@ import simplejson as serializer
 
 def get_args():
     parser = argparse.ArgumentParser(description='./show-tag.py latest.msr --injector 0')
-    parser.add_argument('--injector', dest='injector', default='all',
+    parser.add_argument('-i', '--injector', dest='injector', default='all',
                         choices=['0', '1', '2', '3', 'all'],
                         help='Injector number [0..3, all] (default: all)')
     parser.add_argument('filename', help='file name')
-    parser.add_argument('--scale', dest='scale', default=1, type=int,
+    parser.add_argument('-s', '--scale', dest='scale', default=1, type=int,
                         help='how many samles to skip while ploting (default: 1)')
     parser.add_argument('--plot', dest='plot', default='local', type=str,
                         choices=['local', 'remote'],
@@ -65,6 +65,15 @@ class LocalCanvas(ICanvas):
                ncol=2, mode="expand", borderaxespad=0.)
         show()
 
+def __annotate(ax, _str, _xy):
+    ax.annotate(_str, 
+                xy=_xy,
+                xycoords='data',
+                xytext=(-10, -30),
+                rotation='vertical', 
+                textcoords='offset points',
+                arrowprops=dict(arrowstyle="->", connectionstyle="arc3")
+                )
 
 def plot_injectors(channels, canvas):
     traces = []
@@ -82,29 +91,24 @@ def plot_injectors(channels, canvas):
         with open(channel) as f:
             samples.fromfile(f, src_size)
         
-        fig = figure(1,figsize=(8,5))
-        ax = fig.add_subplot(111, autoscale_on=False, xlim=(0,2000), ylim=(-1,300))
+        xlimit = 10 + sum(map(lambda item: 
+                              (item['end'] - item['begin'])/args.scale, 
+                              inject_pulses))
+            
+        fig = pylab.figure(0,figsize=(8,7))
+        ax = fig.add_subplot(111, autoscale_on=False, xlim=(0,xlimit), ylim=(-1,300))
 
         plotter = []
         for index, inject in enumerate(inject_pulses):
-            #scale down the samples array
-            print inject['begin'], inject['end']
-            ax.annotate('injection ' + str(index), 
-                        xy=(len(plotter)-1, 0),
-                        xycoords='data',
-                        xytext=(-30, -30), 
-                        textcoords='offset points',
-                        arrowprops=dict(arrowstyle="->", connectionstyle="arc3")
-                        )
-
-            plotter.extend(samples[inject['begin']:inject['end']].tolist())
-            l = plt.axvline(x=len(plotter))
+            __annotate(ax, 'inj:' + str(index), (len(plotter)-1, 0))
+            plotter.extend(samples[inject['begin']:inject['end']:args.scale].tolist())
+            l = pylab.plt.axvline(x=len(plotter))
             
-        plot(plotter, color=colours[i+1], label=channel_name, linewidth=2)
-    _llegend = plt.legend(ncol=4, loc='upper right', shadow=True, fontsize='small')
+        ax.plot(plotter, color=colours[i+1], label=channel_name, linewidth=2)
+    _llegend = pylab.plt.legend(ncol=4, loc='upper right', shadow=True, fontsize='small')
     _llegend.get_frame().set_facecolor('#00FFCC')
     
-    show()
+    pylab.show()
 
 
 if __name__ == "__main__":
@@ -121,7 +125,7 @@ if __name__ == "__main__":
         channels.append(('injector {}'.format(args.injector), name))
 
     if args.plot == 'local':
-        from pylab import *
+        import pylab
         canvas = LocalCanvas()
     else:
         import plotly.plotly as py
