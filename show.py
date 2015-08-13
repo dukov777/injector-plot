@@ -71,8 +71,8 @@ if __name__ == "__main__":
 	                    choices=['0', '1', '2', '3', 'all'],
 	                    help='Injector number [0..3, all] (default: all)')
 
-    parser.add_argument('--file', dest='filename', default='out.msr',
-	                    help='file name (default: out.msr)')
+    parser.add_argument('filename',
+	                    help='file name')
 
     parser.add_argument('--scale', dest='scale', default=1, type=int,
 	                    help='how many samles to skip while ploting (default: 1)')

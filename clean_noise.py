@@ -15,7 +15,7 @@ def get_args():
     parser.add_argument('filename',
                         help='file name (default: out.msr)')
     parser.add_argument('--zero-level', dest='zero_level', default=10, type=int,
-                        help='how many zeros to delete')
+                        help='')
     return parser.parse_args()
             
 
