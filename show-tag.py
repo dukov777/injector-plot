@@ -60,7 +60,7 @@ class LocalCanvas(ICanvas):
         self.fig = pylab.figure(0,figsize=(8,7))
         self.ax = self.fig.add_subplot(111, 
                                   autoscale_on=False, 
-                                  xlim=(0,850), 
+                                  xlim=(0,150), 
                                   ylim=(-1,300))
 
 
@@ -84,7 +84,11 @@ class LocalCanvas(ICanvas):
                                     shadow=True, 
                                     fontsize='small')
         _llegend.get_frame().set_facecolor('#00FFCC')
-        pylab.show()
+        pylab.show(block=False)
+    
+    
+    def close(self):
+        pylab.close('all')
         
         
     def annotate(self, _str, _xy):
@@ -97,18 +101,55 @@ class LocalCanvas(ICanvas):
                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"))
 
 
-def plot_injectors(channels, canvas):
-    COLORS = ['blue', 'red', 'black', 'green']
-    for i, (channel_name, channel) in enumerate(channels):
-        try:
-            with open(channel+'.btags') as f:
-                inject_pulses = serializer.load(f)
-            
-            src_size = os.path.getsize(channel)
-            samples = array.array('B')
+def __make_frames(inject_pulses, samples):
+    frames = []
+    for index, inject in enumerate(inject_pulses):
+        injection_cycle = samples[inject['begin']:inject['end']:args.scale].tolist()
+        inj = {'data': injection_cycle,
+               'range': (inject['begin'], inject['end']),
+               'scale': args.scale,
+               'name': 'inj:' + str(index)}
+        frames.append(inj)
+    return frames
 
-            with open(channel) as f:
-                samples.fromfile(f, src_size)
+
+def __draw_frames(injector_id, channel_name, frames):
+    COLORS = ['blue', 'red', 'black', 'green']
+    plotter = []
+    range_end = 0
+    for index, inject in enumerate(frames):
+        canvas.annotate(inject['name'], (range_end, 0))
+        
+#             injection_cycle = map(lambda x: x + i*260, injection_cycle)
+        plotter.extend(inject['data'])
+
+        range_end += (inject['range'][1] - inject['range'][0]) / inject['scale']
+        range_end -= 1
+        # trigget to channel 0
+        if injector_id == 0:
+            canvas.set_axline(range_end)
+        
+    canvas.plot(channel_name, plotter, COLORS[injector_id])
+
+
+def __read_samples(channel):
+    with open(channel+'.btags') as f:
+        inject_pulses = serializer.load(f)
+    
+    src_size = os.path.getsize(channel)
+    samples = array.array('B')
+
+    with open(channel) as f:
+        samples.fromfile(f, src_size)
+
+    return inject_pulses, samples
+
+
+    
+def plot_injectors(channels, canvas):
+    for injector_id, (channel_name, channel) in enumerate(channels):
+        try:
+            inject_pulses, samples = __read_samples(channel)
         except IOError:
             continue
         
@@ -116,25 +157,15 @@ def plot_injectors(channels, canvas):
 #                               (item['end'] - item['begin'])/args.scale, 
 #                               inject_pulses))
 #         canvas.set_xrange(xlimit)
-        
-        plotter = []
-        range_end = 0
-        for index, inject in enumerate(inject_pulses):
-            canvas.annotate('inj:' + str(index), (range_end, 0))
-            
-            injection_cycle = samples[inject['begin']:inject['end']:args.scale].tolist()
-#             injection_cycle = map(lambda x: x + i*260, injection_cycle)
-            plotter.extend(injection_cycle)
-
-            range_end += (inject['end'] - inject['begin']) / args.scale
-            range_end = len(plotter) - 1
-            # trigget to channel 0
-            if i == 0:
-                canvas.set_axline(range_end)
-            
-        canvas.plot(channel_name, plotter, COLORS[i])
+        # prepare frames
+        frames = __make_frames(inject_pulses, samples)
+#         print frames[index]
+        __draw_frames(injector_id, channel_name, frames)       
     canvas.show()
 
+step = 150
+s_begin = 0
+s_end = s_begin + step
 
 if __name__ == "__main__":
     args = get_args()
@@ -158,3 +189,44 @@ if __name__ == "__main__":
         canvas = RemoteCanvas()
     
     plot_injectors(channels, canvas)
+    
+    import Tkinter as tk
+    
+    master = tk.Tk()
+    
+    
+    def __increment():
+        global s_end
+        global s_begin
+        s_begin += step
+        s_end += step
+        canvas.set_xrange((s_begin,s_end))
+        canvas.show()
+
+    def __decrement():
+        global s_end
+        global s_begin
+        s_begin -= step
+        s_end -= step
+        canvas.set_xrange((s_begin,s_end))
+        canvas.show()
+
+    def __close():
+        master.quit()
+        canvas.close()
+        
+    master.bind('<KeyPress-Left>', lambda _: __decrement())
+    master.bind('<KeyPress-Right>', lambda _: __increment())
+    master.bind('<KeyPress-q>', lambda _: __close())
+
+    frame = tk.Frame(master)
+    frame.pack()
+    b = tk.Button(frame, text="next", underline=0, command=__increment)
+    b.pack(side=tk.LEFT)
+
+    b2 = tk.Button(frame, text="Quit", command=__close)
+    b2.pack(side=tk.LEFT)
+    
+    master.mainloop()
+    master.destroy()
+    

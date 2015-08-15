@@ -26,8 +26,8 @@ def extract_injectors(f, channels):
 def get_program_params():
     parser = argparse.ArgumentParser(description='Show Injetor Value.')
     
-    parser.add_argument('--file', dest='filename', default='out.msr',
-                        help='file name (default: out.msr)')
+    parser.add_argument('filename',
+                        help='file name')
     
     return parser.parse_args()
 
