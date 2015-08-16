@@ -107,7 +107,6 @@ def __make_frames(inject_pulses, samples):
         injection_cycle = samples[inject['begin']:inject['end']:args.scale].tolist()
         inj = {'data': injection_cycle,
                'range': (inject['begin'], inject['end']),
-               'scale': args.scale,
                'name': 'inj:' + str(index)}
         frames.append(inj)
     return frames
@@ -118,18 +117,70 @@ def __draw_frames(injector_id, channel_name, frames):
     plotter = []
     range_end = 0
     for index, inject in enumerate(frames):
-        canvas.annotate(inject['name'], (range_end, 0))
+        middle = range_end + len(inject['data'])/2
+        canvas.annotate(inject['name'], (middle, 0))
+        range_end += len(inject['data'])
         
-#             injection_cycle = map(lambda x: x + i*260, injection_cycle)
-        plotter.extend(inject['data'])
+        inj = inject['data']
+#         inj = map(lambda x: x + injector_id*260, inj)
+#         pylab.ylim(-1, (max(inj))+10)
+        plotter.extend(inj)
 
-        range_end += (inject['range'][1] - inject['range'][0]) / inject['scale']
-        range_end -= 1
+#         range_end += (inject['range'][1] - inject['range'][0]) / args.scale
+#         range_end -= 1
         # trigget to channel 0
         if injector_id == 0:
             canvas.set_axline(range_end)
         
     canvas.plot(channel_name, plotter, COLORS[injector_id])
+
+
+def __align_frames(channels, canvas):
+    cylinders = []
+    for injector_id, (_, channel) in enumerate(channels):
+        try:
+            inject_pulses, samples = __read_samples(channel)
+        except IOError:
+            continue
+        
+        frames = __make_frames(inject_pulses, samples)
+        cylinders.append(frames)
+    
+    def __get_len(frame):
+        if frame != None:
+            return frame['range'][1] - frame['range'][0]
+        else:
+            return 0
+    def find_max(i0, i1, i2, i3):
+        __max =  max(__get_len(i0), __get_len(i1), __get_len(i2), __get_len(i3))
+        # make max even
+        __max = ((__max + 1) / 2) * 2
+        return __max
+    __max_len = map(find_max, *[x for x in cylinders])
+    
+    def __extend_plot(data, __max):
+        if __max % 2 != 0:
+            raise "max should be in power of 2"
+        # make 'data' even
+        if len(data) % 2 != 0:
+            data.extend([0])
+             
+        middle = __max / 2
+        arr = [0 for _ in range(__max)]
+        # insert 'data' in the middle of arr
+        arr[middle - len(data)/2 : middle + len(data)/2] = data
+        return arr
+
+    for cylinder in cylinders:
+        for index, frame in enumerate(cylinder):
+            if __get_len(frame) < __max_len[index]:
+                frame['data'] = __extend_plot(frame['data'], __max_len[index])
+
+    for injector_id, (channel_name, channel) in enumerate(channels):
+        frames = cylinders[injector_id]
+        __draw_frames(injector_id, channel_name, frames)       
+    
+    canvas.show()
 
 
 def __read_samples(channel):
@@ -144,7 +195,6 @@ def __read_samples(channel):
 
     return inject_pulses, samples
 
-
     
 def plot_injectors(channels, canvas):
     for injector_id, (channel_name, channel) in enumerate(channels):
@@ -153,13 +203,7 @@ def plot_injectors(channels, canvas):
         except IOError:
             continue
         
-#         xlimit = 10 + sum(map(lambda item: 
-#                               (item['end'] - item['begin'])/args.scale, 
-#                               inject_pulses))
-#         canvas.set_xrange(xlimit)
-        # prepare frames
         frames = __make_frames(inject_pulses, samples)
-#         print frames[index]
         __draw_frames(injector_id, channel_name, frames)       
     canvas.show()
 
@@ -188,12 +232,11 @@ if __name__ == "__main__":
         from plotly.graph_objs import *
         canvas = RemoteCanvas()
     
-    plot_injectors(channels, canvas)
+    __align_frames(channels, canvas)
     
     import Tkinter as tk
     
     master = tk.Tk()
-    
     
     def __increment():
         global s_end
